@@ -251,6 +251,7 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'team' || !isset($_SESSIO
         }
 
         if (currentSource) {
+            currentSource.onended = null;
             try { currentSource.stop(); } catch(err) {}
         }
 
@@ -283,6 +284,7 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'team' || !isset($_SESSIO
 
     function stopEffect() {
         if (currentEffectSource) {
+            currentEffectSource.onended = null;
             try { currentEffectSource.stop(); } catch(err) {}
             currentEffectSource = null;
         }
@@ -312,6 +314,7 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'team' || !isset($_SESSIO
 
             setVolume(document.getElementById('volume-slider').value);
 
+            if (isEffectPlaying) return;
             document.getElementById('display-status').innerText = 'Bereit (Stopp)';
             let mainBtn = document.getElementById('btn-main');
             mainBtn.innerText = 'MUSIK START [Leertaste]';
