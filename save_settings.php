@@ -169,31 +169,31 @@ function clearLoginFailures(): void {
     }
 }
 
+function failConfigLoad(): void {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'media/config.json fehlt, ist leer oder beschädigt. Bitte aus einem Backup wiederherstellen.']);
+    exit;
+}
+
 function loadConfig() {
     global $configFile;
-    $default = [
-        'app_name' => 'Eishockey Soundbox',
-        'admin' => ['username' => 'admin', 'password' => 'admin123'],
-        'teams' => [['id' => 'default', 'name' => 'Standard', 'password' => '']]
-    ];
 
-    if (!file_exists($configFile)) {
-        return $default;
-    }
-
-    $raw = file_get_contents($configFile);
+    $raw = is_file($configFile) ? file_get_contents($configFile) : false;
     if ($raw === false || trim($raw) === '') {
-        return $default;
+        failConfigLoad();
     }
 
     $json = json_decode($raw, true);
-    if (!is_array($json) || !isset($json['teams']) || !is_array($json['teams'])) {
-        return $default;
+    if (!is_array($json)
+        || !isset($json['teams']) || !is_array($json['teams'])
+        || !isset($json['admin']['username'], $json['admin']['password'])
+        || !is_string($json['admin']['username']) || !is_string($json['admin']['password'])
+        || $json['admin']['username'] === '' || $json['admin']['password'] === '') {
+        failConfigLoad();
     }
 
     $appName = trim((string)($json['app_name'] ?? 'Eishockey Soundbox'));
     $json['app_name'] = $appName !== '' ? $appName : 'Eishockey Soundbox';
-    $json['admin'] = $json['admin'] ?? ['username' => 'admin', 'password' => 'admin123'];
 
     foreach ($json['teams'] as &$team) {
         if (!isset($team['password'])) {
@@ -357,7 +357,7 @@ if ($action === 'login') {
     $password = trim((string)($_POST['password'] ?? ''));
 
     $config = loadConfig();
-    $admin = $config['admin'] ?? ['username' => 'admin', 'password' => 'admin123'];
+    $admin = $config['admin'];
     $adminHash = (string)($admin['password'] ?? '');
 
     if ($loginIdentifier !== '' && strcasecmp((string)$loginIdentifier, (string)$admin['username']) === 0 && passwordMatches($password, $adminHash)) {
@@ -394,7 +394,8 @@ if ($action === 'login') {
 
     if (!$selectedTeam) {
         recordLoginFailure();
-        echo json_encode(['success' => false, 'message' => 'Team nicht gefunden']);
+        $isAdminLogin = strcasecmp((string)$loginIdentifier, (string)$admin['username']) === 0;
+        echo json_encode(['success' => false, 'message' => $isAdminLogin ? 'Falsches Passwort' : 'Team nicht gefunden']);
         exit;
     }
 
@@ -625,17 +626,30 @@ if ($action === 'save_admin') {
     }
 
     $config = loadConfig();
+    $username = trim((string)($_POST['username'] ?? ''));
     $password = trim((string)($_POST['password'] ?? ''));
-    if ($password === '') {
-        echo json_encode(['success' => false, 'message' => 'Passwort darf nicht leer sein']);
+    if (!preg_match('/\A[a-zA-Z0-9_.-]{3,50}\z/', $username)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Admin-Benutzername: 3–50 Zeichen, Buchstaben, Zahlen, Punkt, Bindestrich oder Unterstrich.']);
+        exit;
+    }
+    $passwordLength = preg_match_all('/./us', $password);
+    if ($passwordLength === false || $passwordLength < 12 || strlen($password) > 1024) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Admin-Passwort muss mindestens 12 Zeichen lang sein.']);
         exit;
     }
 
     $config['admin'] = [
-        'username' => trim((string)($_POST['username'] ?? 'admin')),
+        'username' => $username,
         'password' => hashPassword($password)
     ];
-    persistConfig($config);
+    if (!persistConfig($config)) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Admin-Zugang konnte nicht gespeichert werden. Schreibrechte für media/config.json prüfen.']);
+        exit;
+    }
+    $_SESSION['admin_user'] = $username;
     echo json_encode(['success' => true]);
     exit;
 }
@@ -968,12 +982,13 @@ if ($action === 'upload_effect') {
             exit;
         }
 
-        if ($oldFile && file_exists($oldFile)) {
-            unlink($oldFile);
-        }
         $ext = $validation['extension'];
         $filename = sprintf('%02d', $slot) . '_' . $cleanName . '.' . $ext;
-        if (move_uploaded_file($validation['tmp_name'], $effectsDir . '/' . $filename)) {
+        $targetPath = $effectsDir . '/' . $filename;
+        if (move_uploaded_file($validation['tmp_name'], $targetPath)) {
+            if ($oldFile && file_exists($oldFile) && realpath($oldFile) !== realpath($targetPath)) {
+                unlink($oldFile);
+            }
             echo json_encode(['success' => true]);
             exit;
         }
@@ -983,7 +998,10 @@ if ($action === 'upload_effect') {
     else if ($oldFile && file_exists($oldFile)) {
         $ext = pathinfo($oldFile, PATHINFO_EXTENSION);
         $newFilename = sprintf('%02d', $slot) . '_' . $cleanName . '.' . $ext;
-        rename($oldFile, $effectsDir . '/' . $newFilename);
+        if (!rename($oldFile, $effectsDir . '/' . $newFilename)) {
+            echo json_encode(['success' => false, 'message' => 'Effekt konnte nicht umbenannt werden']);
+            exit;
+        }
         echo json_encode(['success' => true]);
         exit;
     }

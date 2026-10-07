@@ -8,6 +8,10 @@ session_set_cookie_params([
     'samesite' => 'Lax'
 ]);
 session_start();
+header('X-Frame-Options: DENY');
+header("Content-Security-Policy: frame-ancestors 'none'");
+header('Referrer-Policy: same-origin');
+header('X-Content-Type-Options: nosniff');
 $configPath = __DIR__ . '/media/config.json';
 if (!is_file($configPath)) {
     header('Location: setup.php');

@@ -1,5 +1,17 @@
 <?php
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'domain' => '',
+    'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
 session_start();
+header('X-Frame-Options: DENY');
+header("Content-Security-Policy: frame-ancestors 'none'");
+header('Referrer-Policy: same-origin');
+header('X-Content-Type-Options: nosniff');
 if (!is_file(__DIR__ . '/media/config.json')) {
     header('Location: setup.php');
     exit;
@@ -81,12 +93,31 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'team' || !isset($_SESSIO
         document.getElementById('main-logo').src = 'media.php?type=logo&v=' + new Date().getTime();
         loadData();
         setVolume(0.8);
+        setInterval(keepSessionAlive, 5 * 60 * 1000);
     };
 
+    async function keepSessionAlive() {
+        try {
+            let res = await fetch('get_data.php', { cache: 'no-store' });
+            let data = await res.json();
+            if (!data.logged_in) {
+                document.getElementById('display-status').innerText = 'Sitzung abgelaufen – bitte neu anmelden';
+            }
+        } catch (error) {
+            document.getElementById('display-status').innerText = 'Fehler: Server nicht erreichbar';
+        }
+    }
+
     async function loadData(teamId = '') {
-        let url = 'get_data.php' + (teamId ? '?team=' + teamId : '');
-        let res = await fetch(url);
-        currentData = await res.json();
+        let url = 'get_data.php' + (teamId ? '?team=' + encodeURIComponent(teamId) : '');
+        try {
+            let res = await fetch(url, { cache: 'no-store' });
+            if (!res.ok) throw new Error('http');
+            currentData = await res.json();
+        } catch (error) {
+            document.getElementById('display-status').innerText = 'Fehler: Server nicht erreichbar';
+            return;
+        }
         document.title = currentData.app_name || 'Eishockey Soundbox';
         document.getElementById('display-team').innerText = 'Team: ' + getSelectedTeamName() + ' (' + currentData.music_source + ')';
 
@@ -120,6 +151,11 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'team' || !isset($_SESSIO
             };
             grid.appendChild(btn);
         });
+
+        effectBufferCache.clear();
+        (currentData.effects || []).forEach(effect => {
+            if (effect && effect.path) getEffectBuffer(effect.path).catch(() => {});
+        });
     }
 
     function getSelectedTeamName() {
@@ -136,6 +172,37 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'team' || !isset($_SESSIO
             fileName = path.split('/').pop();
         }
         return fileName.replace(/\.(mp3|wav|ogg)$/i, '');
+    }
+
+    const effectBufferCache = new Map();
+
+    async function fetchAudioBuffer(path) {
+        let response = await fetch(path, { credentials: 'same-origin' });
+        if (response.status === 401 || response.status === 403) throw new Error('session');
+        if (!response.ok) throw new Error('http');
+        let arrayBuffer = await response.arrayBuffer();
+        return audioContext.decodeAudioData(arrayBuffer);
+    }
+
+    function getEffectBuffer(path) {
+        if (!effectBufferCache.has(path)) {
+            let pending = fetchAudioBuffer(path).catch(error => {
+                effectBufferCache.delete(path);
+                throw error;
+            });
+            effectBufferCache.set(path, pending);
+        }
+        return effectBufferCache.get(path);
+    }
+
+    function showAudioError(error) {
+        isPlaying = false;
+        let mainBtn = document.getElementById('btn-main');
+        mainBtn.innerText = 'MUSIK START [Leertaste]';
+        mainBtn.classList.remove('playing');
+        document.getElementById('display-status').innerText = error && error.message === 'session'
+            ? 'Sitzung abgelaufen – bitte neu anmelden'
+            : 'Fehler: Audiodatei konnte nicht geladen werden';
     }
 
     function setVolume(val) {
@@ -176,9 +243,12 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'team' || !isset($_SESSIO
         playedQueue.push(selectedSong);
 
         document.getElementById('display-status').innerText = 'Lade Audio...';
-        let response = await fetch(selectedSong);
-        let arrayBuffer = await response.arrayBuffer();
-        currentAudioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        try {
+            currentAudioBuffer = await fetchAudioBuffer(selectedSong);
+        } catch (error) {
+            showAudioError(error);
+            return;
+        }
 
         if (currentSource) {
             try { currentSource.stop(); } catch(err) {}
@@ -261,9 +331,13 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'team' || !isset($_SESSIO
             await audioContext.resume();
         }
 
-        let response = await fetch(path);
-        let arrayBuffer = await response.arrayBuffer();
-        let buffer = await audioContext.decodeAudioData(arrayBuffer);
+        let buffer;
+        try {
+            buffer = await getEffectBuffer(path);
+        } catch (error) {
+            showAudioError(error);
+            return;
+        }
 
         currentEffectSource = audioContext.createBufferSource();
         currentEffectSource.buffer = buffer;
@@ -296,7 +370,7 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'team' || !isset($_SESSIO
             toggleMainMusic();
         } else if (e.key >= '1' && e.key <= '6') {
             let idx = parseInt(e.key) - 1;
-            if (currentData.effects[idx]) {
+            if (currentData && currentData.effects && currentData.effects[idx]) {
                 if (document.activeElement) document.activeElement.blur();
                 playEffect(currentData.effects[idx].path, currentData.effects[idx].name);
             }

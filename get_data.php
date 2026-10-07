@@ -1,4 +1,12 @@
 <?php
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'domain' => '',
+    'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
@@ -7,17 +15,20 @@ $configFile = $baseDir . '/config.json';
 
 $teams = [["id" => "default", "name" => "Standard"]];
 $configData = [];
-$adminConfig = ['username' => 'admin'];
+$adminConfig = [];
 if (file_exists($configFile)) {
-    $configData = json_decode(file_get_contents($configFile), true);
-    if (isset($configData['teams'])) {
+    $configData = json_decode((string)file_get_contents($configFile), true);
+    if (!is_array($configData)) {
+        $configData = [];
+    }
+    if (isset($configData['teams']) && is_array($configData['teams'])) {
         $teams = array_map(static function (array $team): array {
             $team['password_set'] = !empty($team['password']);
             unset($team['password']);
             return $team;
         }, $configData['teams']);
     }
-    if (isset($configData['admin'])) {
+    if (isset($configData['admin']) && ($_SESSION['role'] ?? '') === 'admin') {
         $adminConfig = ['username' => $configData['admin']['username'] ?? 'admin'];
     }
 }

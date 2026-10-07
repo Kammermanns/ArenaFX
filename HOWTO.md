@@ -59,7 +59,7 @@ Der Adminbereich ist in **Allgemein**, **Teams**, **Musik**, **Effekte** und **B
 2. Gib einen neuen Benutzernamen und ein neues Passwort ein.
 3. Speichere die Änderung.
 
-> Wichtig: Verwende mindestens ein sicheres Passwort und ändere es nach dem ersten Login, falls es nur ein Standardpasswort ist.
+> Wichtig: Benutzername 3–50 Zeichen (Buchstaben, Zahlen, Punkt, Bindestrich, Unterstrich), Passwort mindestens 12 Zeichen.
 
 ### Teams verwalten
 
@@ -143,3 +143,5 @@ Ein Team kann nur die Dateien und Einstellungen seines eigenen Teams ändern. Di
 - Admin-Funktionen sind nur für den Admin-Zugang erreichbar.
 - Hochgeladene Dateien werden auf Typ, Erweiterung und Größe geprüft.
 - Die Anwendung sollte nur im lokalen Netzwerk oder hinter einer externen Authentifizierung verwendet werden.
+- Ist `media/config.json` leer oder beschädigt, verweigert die Soundbox jede Anmeldung. Dann die Datei aus einem Backup wiederherstellen.
+- Die Soundbox-Seite hält die Sitzung während eines Spiels automatisch offen und zeigt eine Meldung, wenn eine Audiodatei nicht geladen werden kann oder die Sitzung abgelaufen ist.

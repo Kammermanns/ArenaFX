@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 session_set_cookie_params([
     'lifetime' => 0,
     'path' => '/',
@@ -8,6 +8,10 @@ session_set_cookie_params([
     'samesite' => 'Lax'
 ]);
 session_start();
+header('X-Frame-Options: DENY');
+header("Content-Security-Policy: frame-ancestors 'none'");
+header('Referrer-Policy: same-origin');
+header('X-Content-Type-Options: nosniff');
 if (!is_file(__DIR__ . '/media/config.json')) {
     header('Location: setup.php');
     exit;
@@ -38,7 +42,7 @@ if (empty($_SESSION['csrf_token'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($appName) ?> â€“ Einstellungen</title>
+    <title><?= htmlspecialchars($appName) ?> – Einstellungen</title>
     <link rel="stylesheet" href="assets/style.css?v=20261007093738">
 </head>
 <body class="<?= $role === 'admin' ? 'admin-layout' : 'team-layout' ?>">
@@ -58,10 +62,10 @@ if (empty($_SESSION['csrf_token'])) {
     </header>
 
     <?php if ($role === 'admin'): ?>
-        <section class="admin-overview" aria-label="Ãœbersicht">
+        <section class="admin-overview" aria-label="Übersicht">
             <div class="admin-welcome">
                 <div>
-                    <p class="page-kicker">Ãœbersicht</p>
+                    <p class="page-kicker">Übersicht</p>
                     <h2>Willkommen im Adminbereich</h2>
                     <p class="text-muted">Verwalte Vereinsdaten, Teams und Sounddateien an einem Ort.</p>
                 </div>
@@ -73,11 +77,11 @@ if (empty($_SESSION['csrf_token'])) {
                 </article>
                 <article class="admin-stat-card">
                     <span class="admin-stat-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span>
-                    <div><span>Teams</span><strong id="stat-password-count">â€“</strong></div>
+                    <div><span>Teams</span><strong id="stat-password-count">–</strong></div>
                 </article>
                 <article class="admin-stat-card">
                     <span class="admin-stat-icon" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>
-                    <div><strong id="stat-music-count">â€“</strong><span>Musikdateien</span></div>
+                    <div><strong id="stat-music-count">–</strong><span>Musikdateien</span></div>
                 </article>
             </div>
         </section>
@@ -248,7 +252,7 @@ if (empty($_SESSION['csrf_token'])) {
         }
     }
 
-    let currentConfig = { team: null, teams: [], admin: { username: 'admin', password: 'admin123' }, role: '<?php echo htmlspecialchars($role); ?>' };
+    let currentConfig = { team: null, teams: [], admin: { username: '' }, role: '<?php echo htmlspecialchars($role); ?>' };
 
     window.onload = async () => {
         let res = await fetch('get_data.php');
@@ -331,7 +335,7 @@ if (empty($_SESSION['csrf_token'])) {
             const teamCount = responses.reduce((total, data) => total + (data.team_music?.length || 0), 0);
             document.getElementById('stat-music-count').textContent = generalCount + teamCount;
         } catch (error) {
-            document.getElementById('stat-music-count').textContent = 'â€“';
+            document.getElementById('stat-music-count').textContent = '–';
         }
     }
 
@@ -347,7 +351,7 @@ if (empty($_SESSION['csrf_token'])) {
         let formData = new FormData(form);
         formData.append('action', 'upload_logo');
         formData.append('csrf_token', csrfToken);
-        showFeedback('general', 'Logo wird hochgeladen â€¦', 'pending');
+        showFeedback('general', 'Logo wird hochgeladen …', 'pending');
         try {
             let res = await fetch('save_settings.php', { method: 'POST', body: formData });
             let data = await res.json();
@@ -441,7 +445,7 @@ if (empty($_SESSION['csrf_token'])) {
         formData.append('csrf_token', csrfToken);
         formData.append('app_name', appName);
 
-        showFeedback('general', 'Name wird gespeichert â€¦', 'pending');
+        showFeedback('general', 'Name wird gespeichert …', 'pending');
         try {
             let res = await fetch('save_settings.php', { method: 'POST', body: formData });
             let data = await res.json();
@@ -490,6 +494,10 @@ if (empty($_SESSION['csrf_token'])) {
             showFeedback('general', 'Bitte Admin-Benutzername und neues Passwort eingeben.', 'error');
             return;
         }
+        if (Array.from(password).length < 12) {
+            showFeedback('general', 'Das Admin-Passwort muss mindestens 12 Zeichen lang sein.', 'error');
+            return;
+        }
 
         let formData = new FormData();
         formData.append('action', 'save_admin');
@@ -497,7 +505,7 @@ if (empty($_SESSION['csrf_token'])) {
         formData.append('username', username);
         formData.append('password', password);
 
-        showFeedback('general', 'Admin-Zugang wird gespeichert â€¦', 'pending');
+        showFeedback('general', 'Admin-Zugang wird gespeichert …', 'pending');
         try {
             let res = await fetch('save_settings.php', { method: 'POST', body: formData });
             let data = await res.json();
@@ -520,8 +528,8 @@ if (empty($_SESSION['csrf_token'])) {
         effectSelect.innerHTML = '';
 
         currentConfig.teams.forEach(t => {
-            musicSelect.innerHTML += `<option value="${t.id}">${t.name}</option>`;
-            effectSelect.innerHTML += `<option value="${t.id}">${t.name}</option>`;
+            musicSelect.add(new Option(t.name, t.id));
+            effectSelect.add(new Option(t.name, t.id));
         });
     }
 
@@ -537,7 +545,7 @@ if (empty($_SESSION['csrf_token'])) {
         formData.append('action', 'upload_music');
         formData.append('csrf_token', csrfToken);
 
-        showFeedback('music', 'Musikdateien werden hochgeladen â€¦', 'pending');
+        showFeedback('music', 'Musikdateien werden hochgeladen …', 'pending');
         try {
             let res = await fetch('save_settings.php', { method: 'POST', body: formData });
             let data = await res.json();
@@ -616,10 +624,10 @@ if (empty($_SESSION['csrf_token'])) {
                 }
                 showFeedback(feedbackArea, 'Musikdatei wurde gelöscht.');
             } else {
-                showFeedback(feedbackArea, data.message || 'Datei konnte nicht gelÃ¶scht werden.', 'error');
+                showFeedback(feedbackArea, data.message || 'Datei konnte nicht gelöscht werden.', 'error');
             }
         } catch (error) {
-            showFeedback(feedbackArea, 'Datei konnte wegen eines Verbindungsfehlers nicht gelÃ¶scht werden.', 'error');
+            showFeedback(feedbackArea, 'Datei konnte wegen eines Verbindungsfehlers nicht gelöscht werden.', 'error');
         }
     }
 
@@ -714,7 +722,7 @@ if (empty($_SESSION['csrf_token'])) {
         if (fileInput) formData.append('effect_file', fileInput);
 
         const feedbackArea = teamMode ? 'team' : 'effects';
-        showFeedback(feedbackArea, `Effekt-Button ${slot} wird gespeichert â€¦`, 'pending');
+        showFeedback(feedbackArea, `Effekt-Button ${slot} wird gespeichert …`, 'pending');
         try {
             let res = await fetch('save_settings.php', { method: 'POST', body: formData });
             let data = await res.json();
