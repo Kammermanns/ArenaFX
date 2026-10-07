@@ -359,6 +359,10 @@ if ($action === 'login') {
     $config = loadConfig();
     $admin = $config['admin'];
     $adminHash = (string)($admin['password'] ?? '');
+    $isAdminRoleLogin = ($_POST['login_role'] ?? '') === 'admin';
+    if ($isAdminRoleLogin) {
+        $loginIdentifier = (string)$admin['username'];
+    }
 
     if ($loginIdentifier !== '' && strcasecmp((string)$loginIdentifier, (string)$admin['username']) === 0 && passwordMatches($password, $adminHash)) {
         if ($adminHash === $password || password_needs_rehash($adminHash, PASSWORD_DEFAULT)) {
@@ -373,6 +377,12 @@ if ($action === 'login') {
         $_SESSION['admin_user'] = $admin['username'];
         ensureCsrfToken();
         echo json_encode(['success' => true, 'redirect' => 'settings.php']);
+        exit;
+    }
+
+    if ($isAdminRoleLogin) {
+        recordLoginFailure();
+        echo json_encode(['success' => false, 'message' => 'Falsches Passwort']);
         exit;
     }
 

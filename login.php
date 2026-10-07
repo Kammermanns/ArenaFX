@@ -54,7 +54,7 @@ if (file_exists($configPath)) {
         <form id="login-form">
             <label for="account-select">Anmelden als</label>
             <select id="account-select" name="account_select" required>
-                <option value="admin">Admin</option>
+                <option value="admin" data-role="admin">Admin</option>
                 <?php foreach ($teams as $team): ?>
                     <option value="<?= htmlspecialchars((string)($team['id'] ?? '')) ?>"><?= htmlspecialchars((string)($team['name'] ?? 'Unbekannt')) ?></option>
                 <?php endforeach; ?>
@@ -90,6 +90,7 @@ if (file_exists($configPath)) {
             formData.append('action', 'login');
             formData.append('csrf_token', csrfToken);
             formData.append('account', accountSelect.value);
+            formData.append('login_role', accountSelect.selectedOptions[0]?.dataset.role === 'admin' ? 'admin' : 'team');
             formData.append('password', password);
 
             status.textContent = 'Anmeldung läuft...';
