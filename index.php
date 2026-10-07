@@ -206,7 +206,8 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'team' || !isset($_SESSIO
     }
 
     function setVolume(val) {
-        gainNode.gain.value = val;
+        gainNode.gain.cancelScheduledValues(audioContext.currentTime);
+        gainNode.gain.setValueAtTime(Number(val), audioContext.currentTime);
         document.getElementById('volume-label').innerText = Math.round(val * 100) + '%';
     }
 
