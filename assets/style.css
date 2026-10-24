@@ -1236,3 +1236,54 @@ input[type="file"] {
         flex: 1;
     }
 }
+
+
+/* Update */
+.update-badge {
+    margin-left: 6px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--primary);
+    color: var(--bg);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.update-versions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 32px;
+    margin: 4px 0 12px;
+}
+
+.update-versions dt {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.update-versions dd {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+#update-details h3 {
+    margin: 14px 0 8px;
+}
+
+.update-notes {
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--bg-soft);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-size: 0.92rem;
+    line-height: 1.5;
+}
+
+.update-hint {
+    margin-top: 12px;
+}

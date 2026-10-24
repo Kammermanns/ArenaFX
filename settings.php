@@ -33,13 +33,14 @@ if (empty($_SESSION['csrf_token'])) {
             $appName = $configuredName;
         }
     }
+    $appVersion = (string)(require __DIR__ . '/version.php');
 ?><!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($appName) ?> – Einstellungen</title>
-    <link rel="stylesheet" href="assets/style.css?v=20261007093738">
+    <link rel="stylesheet" href="assets/style.css?v=<?= rawurlencode($appVersion) ?>">
 </head>
 <body class="<?= $role === 'admin' ? 'admin-layout' : 'team-layout' ?>">
 <div class="app-shell settings-page">
@@ -88,6 +89,7 @@ if (empty($_SESSION['csrf_token'])) {
             <button type="button" role="tab" aria-selected="false" aria-controls="admin-section-music" tabindex="-1" class="admin-nav-item" data-admin-section="music"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M13 4v12.5a3.5 3.5 0 1 1-2-3.2V7l9-2v9.5a3.5 3.5 0 1 1-2-3.2V3l-5 1Z"/></svg> Musik verwalten</button>
             <button type="button" role="tab" aria-selected="false" aria-controls="admin-section-effects" tabindex="-1" class="admin-nav-item" data-admin-section="effects"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m13 2-9 12h7l-1 8 10-13h-7l1-7Z"/></svg> Effekte verwalten</button>
             <button type="button" role="tab" aria-selected="false" aria-controls="admin-section-backup" tabindex="-1" class="admin-nav-item" data-admin-section="backup"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7"/></svg> Backup und Wiederherstellung</button>
+            <button type="button" role="tab" aria-selected="false" aria-controls="admin-section-update" tabindex="-1" class="admin-nav-item" data-admin-section="update"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg> Update<span class="update-badge" id="update-badge" hidden>Neu</span></button>
         </nav>
 
         <section class="admin-section active" role="tabpanel" id="admin-section-general" aria-label="Allgemeine Einstellungen" tabindex="0">
@@ -193,6 +195,28 @@ if (empty($_SESSION['csrf_token'])) {
         </div>
             <div class="admin-feedback" id="feedback-backup" role="status" aria-live="polite" hidden></div>
         </section>
+
+        <section class="admin-section" role="tabpanel" id="admin-section-update" aria-label="Update" tabindex="0">
+            <div class="section-heading"><div><h2>Update</h2><p>Neue Versionen der Soundbox direkt von GitHub installieren.</p></div></div>
+        <div class="card">
+            <h2>Soundbox-Version</h2>
+            <dl class="update-versions">
+                <div><dt>Installiert</dt><dd id="update-current"><?= htmlspecialchars($appVersion) ?></dd></div>
+                <div><dt>Neueste</dt><dd id="update-latest">–</dd></div>
+            </dl>
+            <p class="text-muted" id="update-summary">Noch nicht geprüft.</p>
+            <div id="update-details" hidden>
+                <h3 id="update-release-name"></h3>
+                <div class="update-notes" id="update-notes"></div>
+                <p class="text-muted update-hint">Vor dem Update wird jede ersetzte Programmdatei im Ordner <code>update-backups</code> gesichert. Musik, Effekte, Logo und Konfiguration bleiben unverändert. Tipp: Vorher zusätzlich ein Backup herunterladen.</p>
+            </div>
+            <div class="card-actions">
+                <button type="button" class="btn btn-secondary" id="update-check-button" onclick="checkForUpdates(true)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg> Nach Updates suchen</button>
+                <button type="button" class="btn" id="update-install-button" onclick="installUpdate()" hidden><svg class="ui-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 4v12m0 0 5-5m-5 5-5-5M4 19h16"/></svg> Jetzt aktualisieren</button>
+            </div>
+        </div>
+            <div class="admin-feedback" id="feedback-update" role="status" aria-live="polite" hidden></div>
+        </section>
     <?php else: ?>
         <div class="card">
             <h2>Team: <?php echo htmlspecialchars($teamName); ?></h2>
@@ -272,7 +296,88 @@ if (empty($_SESSION['csrf_token'])) {
         document.getElementById('admin-username').value = currentConfig.admin?.username || 'admin';
         document.getElementById('admin-password').value = '';
         updateAdminOverview();
+        checkForUpdates(false);
     };
+
+    let availableUpdateVersion = null;
+
+    async function checkForUpdates(force) {
+        const summary = document.getElementById('update-summary');
+        const checkButton = document.getElementById('update-check-button');
+        const installButton = document.getElementById('update-install-button');
+        const details = document.getElementById('update-details');
+        if (force) {
+            summary.textContent = 'Suche nach Updates …';
+            checkButton.disabled = true;
+        }
+
+        const formData = csrfFormData();
+        formData.append('action', 'check');
+        if (force) formData.append('force', '1');
+
+        try {
+            const response = await fetch('update.php', { method: 'POST', body: formData });
+            const data = await response.json();
+            if (!data.success) {
+                if (force) {
+                    summary.textContent = data.message || 'Update-Prüfung fehlgeschlagen.';
+                    showFeedback('update', data.message || 'Update-Prüfung fehlgeschlagen.', 'error');
+                }
+                return;
+            }
+
+            document.getElementById('update-latest').textContent = data.latest_version;
+            availableUpdateVersion = data.update_available ? data.latest_version : null;
+            document.getElementById('update-badge').hidden = !data.update_available;
+            details.hidden = !data.update_available;
+            installButton.hidden = !data.update_available || data.git_checkout;
+
+            if (data.update_available) {
+                summary.textContent = data.git_checkout
+                    ? `Version ${data.latest_version} ist verfügbar. Diese Installation ist ein Git-Klon – bitte mit „git pull“ aktualisieren.`
+                    : `Version ${data.latest_version} ist verfügbar.`;
+                document.getElementById('update-release-name').textContent = data.release_name || `Version ${data.latest_version}`;
+                document.getElementById('update-notes').textContent = data.notes || 'Keine Versionshinweise vorhanden.';
+            } else {
+                summary.textContent = 'Die Soundbox ist auf dem neuesten Stand.';
+            }
+            if (force) document.getElementById('feedback-update').hidden = true;
+        } catch (error) {
+            if (force) summary.textContent = 'Update-Prüfung fehlgeschlagen. Bitte Verbindung prüfen.';
+        } finally {
+            checkButton.disabled = false;
+        }
+    }
+
+    async function installUpdate() {
+        if (!availableUpdateVersion) return;
+        if (!window.confirm(`Version ${availableUpdateVersion} jetzt installieren? Die Soundbox sollte währenddessen nicht benutzt werden.`)) return;
+
+        const installButton = document.getElementById('update-install-button');
+        const checkButton = document.getElementById('update-check-button');
+        installButton.disabled = true;
+        checkButton.disabled = true;
+        showFeedback('update', 'Update wird heruntergeladen und installiert. Bitte das Fenster nicht schliessen …', 'pending');
+
+        const formData = csrfFormData();
+        formData.append('action', 'install');
+        formData.append('version', availableUpdateVersion);
+
+        try {
+            const response = await fetch('update.php', { method: 'POST', body: formData });
+            const data = await response.json();
+            if (data.success) {
+                showFeedback('update', `${data.message} Die Seite wird neu geladen …`);
+                setTimeout(() => window.location.reload(), 2500);
+                return;
+            }
+            showFeedback('update', data.message || 'Update fehlgeschlagen.', 'error');
+        } catch (error) {
+            showFeedback('update', 'Update fehlgeschlagen. Bitte Seite neu laden und den Stand prüfen.', 'error');
+        }
+        installButton.disabled = false;
+        checkButton.disabled = false;
+    }
 
     function initializeAdminNavigation() {
         const tabs = Array.from(document.querySelectorAll('[data-admin-section]'));

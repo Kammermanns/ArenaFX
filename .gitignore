@@ -3,5 +3,9 @@
 !/media/.htaccess
 /media/config.json.tmp
 
+# Sicherungen der Update-Funktion
+/update-backups/
+*.update-tmp
+
 # Lokale Backups
 *.tar.gz

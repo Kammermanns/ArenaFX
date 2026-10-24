@@ -87,6 +87,22 @@ Der Adminbereich ist in **Allgemein**, **Teams**, **Musik**, **Effekte** und **B
 - Team-Musik-Uploads dürfen nur in das angemeldete Teamverzeichnis schreiben. Dateinamen, Team-IDs und Dateitypen werden serverseitig geprüft.
 - Für Zugriff über ein Netzwerk HTTPS über einen korrekt eingerichteten Reverse Proxy oder Webserver verwenden. Nicht über eine unverschlüsselte Verbindung ins Internet freigeben.
 
+### Soundbox aktualisieren
+
+1. Im Admin-Bereich den Abschnitt **Update** öffnen. Beim Öffnen des Admin-Bereichs wird automatisch geprüft, ob eine neue Version verfügbar ist; der Tab zeigt dann „Neu“.
+2. Mit **Nach Updates suchen** lässt sich die Prüfung jederzeit von Hand auslösen. Angezeigt werden installierte und neueste Version sowie die Versionshinweise.
+3. Vorher sicherheitshalber unter **Backup und Wiederherstellung** ein Backup herunterladen.
+4. **Jetzt aktualisieren** klicken und bestätigen. Die Soundbox lädt das Release von GitHub, prüft es und ersetzt die Programmdateien. Danach lädt die Seite neu.
+
+Gut zu wissen:
+
+- Musik, Effekte, Logo und Konfiguration im Ordner `media` werden nie verändert.
+- Jede ersetzte Programmdatei wird vorher im Ordner `update-backups` gesichert (die letzten drei Updates bleiben erhalten). Schlägt ein Update fehl, setzt die Soundbox automatisch alle Änderungen zurück.
+- Der Server braucht Internetzugang, die PHP-Erweiterung `curl` (bei XAMPP aktiv) sowie Schreibrechte im Programmordner.
+- Meldet die Prüfung ein Zertifikatsproblem, in der `php.ini` `curl.cainfo` auf ein CA-Zertifikatsbündel setzen, zum Beispiel `curl.cainfo="C:\xampp\apache\bin\curl-ca-bundle.crt"`, und Apache neu starten.
+- Wurde die Soundbox mit `git clone` installiert, bitte mit `git pull` aktualisieren; die Update-Schaltfläche ist dann ausgeblendet.
+- Versionen vor 1.1.0 haben noch keine Update-Funktion und müssen einmalig von Hand aktualisiert werden: neues Release herunterladen und die Programmdateien ersetzen, den Ordner `media` dabei nicht überschreiben.
+
 ### Logo hochladen
 
 1. Wähle ein PNG- oder JPG-Bild.
@@ -144,3 +160,12 @@ Ein Team kann nur die Dateien und Einstellungen seines eigenen Teams ändern. Di
 - Der Ordner `media` ist per `.gitignore` von Git ausgeschlossen, damit Konfiguration, Passwort-Hashes und Mediendateien nicht versehentlich ins Repository gelangen.
 - Hochgeladene Dateien werden auf Typ, Erweiterung und Größe geprüft.
 - Die Anwendung sollte nur im lokalen Netzwerk oder hinter einer externen Authentifizierung verwendet werden.
+
+## 9. Neue Version veröffentlichen (für Entwickler)
+
+Die Update-Funktion erkennt neue Versionen über die Releases auf GitHub. Damit ein Update installiert werden kann:
+
+1. In `version.php` die neue Versionsnummer eintragen, zum Beispiel `return '1.2.0';`.
+2. Änderungen committen und nach `main` bringen.
+3. Auf GitHub unter **Releases → Draft a new release** ein Release mit dem Tag `v1.2.0` auf `main` erstellen. Tag und `version.php` müssen übereinstimmen, sonst lehnt die Soundbox das Update ab.
+4. Die Release-Beschreibung wird den Admins vor dem Update als Versionshinweis angezeigt.
