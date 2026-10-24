@@ -50,14 +50,19 @@ if (file_exists($configPath)) {
         <form id="login-form">
             <label for="account-select">Anmelden als</label>
             <select id="account-select" name="account_select" required>
-                <option value="admin">Admin</option>
+                <option value="__admin__">Admin</option>
                 <?php foreach ($teams as $team): ?>
                     <option value="<?= htmlspecialchars((string)($team['id'] ?? '')) ?>"><?= htmlspecialchars((string)($team['name'] ?? 'Unbekannt')) ?></option>
                 <?php endforeach; ?>
             </select>
 
+            <div id="admin-username-box" hidden>
+                <label for="admin-username">Admin-Benutzername</label>
+                <input type="text" id="admin-username" name="admin_username" autocomplete="username" maxlength="50">
+            </div>
+
             <label for="password">Passwort</label>
-            <input type="password" id="password" name="password" placeholder="Passwort" required>
+            <input type="password" id="password" name="password" placeholder="Passwort" autocomplete="current-password" required>
 
             <button type="submit" class="btn">Anmelden</button>
         </form>
@@ -68,11 +73,26 @@ if (file_exists($configPath)) {
     <script>
         const csrfToken = <?= json_encode($_SESSION['csrf_token'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 
+        const accountSelectElement = document.getElementById('account-select');
+        const adminUsernameBox = document.getElementById('admin-username-box');
+        const adminUsernameInput = document.getElementById('admin-username');
+        const updateAdminFields = () => {
+            const isAdmin = accountSelectElement.value === '__admin__';
+            adminUsernameBox.hidden = !isAdmin;
+            adminUsernameInput.required = isAdmin;
+        };
+        accountSelectElement.addEventListener('change', updateAdminFields);
+        updateAdminFields();
+
         document.addEventListener('DOMContentLoaded', async () => {
-            const data = await fetch('get_data.php').then(response => response.json());
-            const appName = data.app_name || 'Eishockey Soundbox';
-            document.title = appName + ' Login';
-            document.getElementById('login-app-name').textContent = appName;
+            try {
+                const data = await fetch('get_data.php').then(response => response.json());
+                const appName = data.app_name || 'Eishockey Soundbox';
+                document.title = appName + ' Login';
+                document.getElementById('login-app-name').textContent = appName;
+            } catch (error) {
+                // Name bleibt beim Standardwert
+            }
         });
 
         document.getElementById('login-form').addEventListener('submit', async function (event) {
@@ -87,14 +107,23 @@ if (file_exists($configPath)) {
             formData.append('csrf_token', csrfToken);
             formData.append('account', accountSelect.value);
             formData.append('password', password);
+            if (accountSelect.value === '__admin__') {
+                formData.append('admin_username', adminUsernameInput.value.trim());
+            }
 
             status.textContent = 'Anmeldung läuft...';
 
-            const response = await fetch('save_settings.php', {
-                method: 'POST',
-                body: formData
-            });
-            const data = await response.json();
+            let data;
+            try {
+                const response = await fetch('save_settings.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                data = await response.json();
+            } catch (error) {
+                status.textContent = 'Server nicht erreichbar.';
+                return;
+            }
 
             if (data.success) {
                 window.location.href = data.redirect || 'index.php';

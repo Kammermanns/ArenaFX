@@ -12,7 +12,7 @@
 ### Schritte
 
 1. Starte das XAMPP Control Panel und aktiviere **Apache**.
-2. Lege den Projektordner `soundbox` unter `C:\xampp\htdocs\` ab. Die PHP-Dateien müssen direkt darin liegen, zum Beispiel `C:\xampp\htdocs\soundbox\setup.php`.
+2. Lege den Projektordner unter `C:\xampp\htdocs\` ab und nenne ihn `soundbox` (beim Klonen: `git clone https://github.com/Kammermanns/ArenaFX soundbox`). Die PHP-Dateien müssen direkt darin liegen, zum Beispiel `C:\xampp\htdocs\soundbox\setup.php`. Bei einem anderen Ordnernamen ändern sich die URLs in dieser Anleitung entsprechend.
 3. Apache/PHP muss im Projektordner und in `media` schreiben können, damit die Erstkonfiguration und Uploads erstellt werden können. Vergib nur nötige Schreibrechte.
 4. Öffne beim ersten Aufruf `http://localhost/soundbox/setup.php` (der Login leitet ohne Konfiguration automatisch dorthin weiter).
 5. Lege Admin-Benutzername und ein starkes Passwort fest, gib einen Ordnernamen für das erste Team sowie den Vereinsnamen an und lade das PNG-/JPG-Vereinslogo hoch.
@@ -35,7 +35,7 @@ Sichere vor Änderungen mindestens den Ordner `media` (darin liegen Konfiguratio
 
 ## 3. Anmelden
 
-- **Admin:** Wähle `Admin` aus der Dropdown-Liste und gib das Admin-Passwort ein.
+- **Admin:** Wähle `Admin` aus der Dropdown-Liste und gib den bei der Einrichtung festgelegten Admin-Benutzernamen sowie das Admin-Passwort ein.
 - **Team:** Wähle das gewünschte Team aus und gib dessen Team-Passwort ein.
 - Nach erfolgreicher Anmeldung wird der Benutzer automatisch zur Soundbox oder zum Einstellungsbereich weitergeleitet.
 - Ein bereits angemeldeter Benutzer wird beim erneuten Öffnen des Logins automatisch weitergeleitet.
@@ -56,10 +56,9 @@ Der Adminbereich ist in **Allgemein**, **Teams**, **Musik**, **Effekte** und **B
 ### Admin-Zugang ändern
 
 1. Öffne den Admin-Bereich.
-2. Gib einen neuen Benutzernamen und ein neues Passwort ein.
-3. Speichere die Änderung.
-
-> Wichtig: Verwende mindestens ein sicheres Passwort und ändere es nach dem ersten Login, falls es nur ein Standardpasswort ist.
+2. Gib zur Bestätigung das aktuelle Admin-Passwort ein.
+3. Passe den Benutzernamen an (3–50 Zeichen) und gib optional ein neues Passwort mit mindestens 12 Zeichen ein. Bleibt das Feld leer, bleibt das Passwort unverändert.
+4. Speichere die Änderung und merke dir den Benutzernamen – er wird bei der Anmeldung benötigt.
 
 ### Teams verwalten
 
@@ -141,5 +140,7 @@ Ein Team kann nur die Dateien und Einstellungen seines eigenen Teams ändern. Di
 - Passwortänderungen und Team-Änderungen werden mit einem Sicherheits-Token geschützt.
 - Team-Benutzer können nur ihre eigenen Dateien verwalten.
 - Admin-Funktionen sind nur für den Admin-Zugang erreichbar.
+- Ist `media/config.json` beschädigt, verweigert die Anwendung jede Anmeldung, statt auf Standardzugangsdaten zurückzufallen. In diesem Fall die Datei aus einem Backup wiederherstellen.
+- Der Ordner `media` ist per `.gitignore` von Git ausgeschlossen, damit Konfiguration, Passwort-Hashes und Mediendateien nicht versehentlich ins Repository gelangen.
 - Hochgeladene Dateien werden auf Typ, Erweiterung und Größe geprüft.
 - Die Anwendung sollte nur im lokalen Netzwerk oder hinter einer externen Authentifizierung verwendet werden.

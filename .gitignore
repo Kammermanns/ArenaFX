@@ -1,0 +1,7 @@
+# Laufzeitdaten der Soundbox (Konfiguration mit Passwort-Hashes, Logo, Musik, Effekte)
+/media/*
+!/media/.htaccess
+/media/config.json.tmp
+
+# Lokale Backups
+*.tar.gz
