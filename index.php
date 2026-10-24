@@ -1,4 +1,12 @@
 <?php
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'domain' => '',
+    'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
 session_start();
 if (!is_file(__DIR__ . '/media/config.json')) {
     header('Location: setup.php');
@@ -59,7 +67,7 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'team' || !isset($_SESSIO
         <div class="effects-grid" id="effects-grid" aria-live="polite">
             <!-- Werden dynamisch geladen -->
         </div>
-        <button class="btn-main" id="btn-main" onclick="toggleMainMusic(event)" aria-label="Musik starten oder stoppen">MUSIK START</button>
+        <button class="btn-main" id="btn-main" onclick="toggleMainMusic(event)" aria-label="Musik starten oder stoppen">MUSIK START [Leertaste]</button>
     </main>
 </div>
 
@@ -109,11 +117,13 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'team' || !isset($_SESSIO
 
         let grid = document.getElementById('effects-grid');
         grid.innerHTML = '';
-        (currentData.effects || []).forEach((effect, i) => {
-            if (!effect || !effect.path) return;
+        (currentData.effects || [])
+            .filter(effect => effect && effect.path)
+            .sort((a, b) => a.slot - b.slot)
+            .forEach(effect => {
             let btn = document.createElement('button');
             btn.className = 'btn-effect';
-            btn.innerText = (effect.slot || (i + 1)) + '. ' + effect.name;
+            btn.innerText = effect.slot + '. ' + effect.name;
             btn.onclick = (e) => {
                 e.target.blur();
                 playEffect(effect.path, effect.name);
@@ -295,10 +305,11 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'team' || !isset($_SESSIO
             if (document.activeElement) document.activeElement.blur();
             toggleMainMusic();
         } else if (e.key >= '1' && e.key <= '6') {
-            let idx = parseInt(e.key) - 1;
-            if (currentData.effects[idx]) {
+            if (!currentData || !currentData.effects) return;
+            let effect = currentData.effects.find(x => x.slot === parseInt(e.key, 10));
+            if (effect) {
                 if (document.activeElement) document.activeElement.blur();
-                playEffect(currentData.effects[idx].path, currentData.effects[idx].name);
+                playEffect(effect.path, effect.name);
             }
         }
     });

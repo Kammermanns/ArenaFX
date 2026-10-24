@@ -15,6 +15,14 @@ $configFile = $baseDir . '/config.json';
 
 $action = $_POST['action'] ?? '';
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST) && empty($_FILES) && (int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
+    http_response_code(413);
+    echo json_encode(['success' => false, 'message' => 'Upload ist zu gross für die PHP-Einstellungen (post_max_size / upload_max_filesize).']);
+    exit;
+}
+
+const MUSIC_FILE_PATTERN = '/\A[a-zA-Z0-9][a-zA-Z0-9 _.-]{0,175}\.(?:mp3|wav|ogg)\z/i';
+
 function ensureDir($dir) {
     if (!is_dir($dir)) {
         mkdir($dir, 0777, true);
@@ -169,31 +177,34 @@ function clearLoginFailures(): void {
     }
 }
 
-function loadConfig() {
+function configUnavailable(): never {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Die Konfiguration (media/config.json) ist beschädigt oder nicht lesbar. Bitte aus einem Backup wiederherstellen.']);
+    exit;
+}
+
+function loadConfig(): array {
     global $configFile;
-    $default = [
-        'app_name' => 'Eishockey Soundbox',
-        'admin' => ['username' => 'admin', 'password' => 'admin123'],
-        'teams' => [['id' => 'default', 'name' => 'Standard', 'password' => '']]
-    ];
 
-    if (!file_exists($configFile)) {
-        return $default;
-    }
-
-    $raw = file_get_contents($configFile);
+    $raw = is_file($configFile) ? file_get_contents($configFile) : false;
     if ($raw === false || trim($raw) === '') {
-        return $default;
+        configUnavailable();
     }
 
     $json = json_decode($raw, true);
-    if (!is_array($json) || !isset($json['teams']) || !is_array($json['teams'])) {
-        return $default;
+    if (
+        !is_array($json) ||
+        !isset($json['teams'], $json['admin']) ||
+        !is_array($json['teams']) ||
+        !is_array($json['admin']) ||
+        trim((string)($json['admin']['username'] ?? '')) === '' ||
+        (string)($json['admin']['password'] ?? '') === ''
+    ) {
+        configUnavailable();
     }
 
     $appName = trim((string)($json['app_name'] ?? 'Eishockey Soundbox'));
     $json['app_name'] = $appName !== '' ? $appName : 'Eishockey Soundbox';
-    $json['admin'] = $json['admin'] ?? ['username' => 'admin', 'password' => 'admin123'];
 
     foreach ($json['teams'] as &$team) {
         if (!isset($team['password'])) {
@@ -203,6 +214,15 @@ function loadConfig() {
     unset($team);
 
     return $json;
+}
+
+function isValidAdminUsername(string $username): bool {
+    return (bool)preg_match('/\A[a-zA-Z0-9_.-]{3,50}\z/', $username);
+}
+
+function passwordLength(string $password): int {
+    $length = preg_match_all('/./us', $password);
+    return $length === false ? 0 : $length;
 }
 
 ensureDir($baseDir);
@@ -231,17 +251,16 @@ if ($action === 'initialize_setup') {
     }
 
     $adminUsername = trim((string)($_POST['admin_username'] ?? ''));
-    $adminPassword = (string)($_POST['admin_password'] ?? '');
+    $adminPassword = trim((string)($_POST['admin_password'] ?? ''));
     $folderName = trim((string)($_POST['folder_name'] ?? ''));
     $clubName = trim((string)($_POST['club_name'] ?? ''));
 
-    if (!preg_match('/\A[a-zA-Z0-9_.-]{3,50}\z/', $adminUsername)) {
+    if (!isValidAdminUsername($adminUsername)) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Admin-Benutzername: 3–50 Zeichen, Buchstaben, Zahlen, Punkt, Bindestrich oder Unterstrich.']);
         exit;
     }
-    $passwordLength = preg_match_all('/./us', $adminPassword, $passwordCharacters);
-    if ($passwordLength === false || $passwordLength < 12 || strlen($adminPassword) > 1024) {
+    if (passwordLength($adminPassword) < 12 || strlen($adminPassword) > 1024) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Admin-Passwort muss mindestens 12 Zeichen lang sein.']);
         exit;
@@ -353,14 +372,21 @@ if ($action === 'login') {
         exit;
     }
 
-    $loginIdentifier = trim((string)($_POST['login_identifier'] ?? $_POST['account'] ?? $_POST['username'] ?? $_POST['account_user'] ?? $_POST['team_id'] ?? ''));
+    $account = trim((string)($_POST['account'] ?? ''));
     $password = trim((string)($_POST['password'] ?? ''));
 
     $config = loadConfig();
-    $admin = $config['admin'] ?? ['username' => 'admin', 'password' => 'admin123'];
-    $adminHash = (string)($admin['password'] ?? '');
+    $admin = $config['admin'];
+    $adminHash = (string)$admin['password'];
 
-    if ($loginIdentifier !== '' && strcasecmp((string)$loginIdentifier, (string)$admin['username']) === 0 && passwordMatches($password, $adminHash)) {
+    if ($account === '__admin__') {
+        $adminUsername = trim((string)($_POST['admin_username'] ?? ''));
+        if ($adminUsername === '' || strcasecmp($adminUsername, (string)$admin['username']) !== 0 || !passwordMatches($password, $adminHash)) {
+            recordLoginFailure();
+            echo json_encode(['success' => false, 'message' => 'Benutzername oder Passwort falsch']);
+            exit;
+        }
+
         if ($adminHash === $password || password_needs_rehash($adminHash, PASSWORD_DEFAULT)) {
             $admin['password'] = hashPassword($password);
             $config['admin'] = $admin;
@@ -376,6 +402,7 @@ if ($action === 'login') {
         exit;
     }
 
+    $loginIdentifier = $account;
     if ($loginIdentifier === '') {
         echo json_encode(['success' => false, 'message' => 'Benutzername oder Team erforderlich']);
         exit;
@@ -625,18 +652,39 @@ if ($action === 'save_admin') {
     }
 
     $config = loadConfig();
+    $currentPassword = trim((string)($_POST['current_password'] ?? ''));
+    $username = trim((string)($_POST['username'] ?? ''));
     $password = trim((string)($_POST['password'] ?? ''));
+
+    if (!passwordMatches($currentPassword, (string)$config['admin']['password'])) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Das aktuelle Admin-Passwort ist falsch.']);
+        exit;
+    }
+    if (!isValidAdminUsername($username)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Admin-Benutzername: 3–50 Zeichen, Buchstaben, Zahlen, Punkt, Bindestrich oder Unterstrich.']);
+        exit;
+    }
     if ($password === '') {
-        echo json_encode(['success' => false, 'message' => 'Passwort darf nicht leer sein']);
+        $password = $currentPassword;
+    } elseif (passwordLength($password) < 12 || strlen($password) > 1024) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Das neue Admin-Passwort muss mindestens 12 Zeichen lang sein.']);
         exit;
     }
 
     $config['admin'] = [
-        'username' => trim((string)($_POST['username'] ?? 'admin')),
+        'username' => $username,
         'password' => hashPassword($password)
     ];
-    persistConfig($config);
-    echo json_encode(['success' => true]);
+    if (!persistConfig($config)) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Admin-Zugang konnte nicht gespeichert werden. Schreibrechte für media/config.json prüfen.']);
+        exit;
+    }
+    $_SESSION['admin_user'] = $username;
+    echo json_encode(['success' => true, 'username' => $username]);
     exit;
 }
 
@@ -695,8 +743,13 @@ if ($action === 'upload_logo') {
             exit;
         }
 
-        $target = $baseDir . '/logo.png';
+        $extension = $validation['mime'] === 'image/png' ? 'png' : 'jpg';
+        $otherExtension = $extension === 'png' ? 'jpg' : 'png';
+        $target = $baseDir . '/logo.' . $extension;
         if (move_uploaded_file($validation['tmp_name'], $target)) {
+            if (is_file($baseDir . '/logo.' . $otherExtension)) {
+                @unlink($baseDir . '/logo.' . $otherExtension);
+            }
             echo json_encode(['success' => true, 'timestamp' => time()]);
             exit;
         }
@@ -796,7 +849,7 @@ if ($action === 'upload_music') {
                 echo json_encode(['success' => false, 'message' => $validation['message']]);
                 exit;
             }
-            if (!preg_match('/\A[a-zA-Z0-9][a-zA-Z0-9 _.-]{0,175}\.' . preg_quote($validation['extension'], '/') . '\z/i', $validation['name'])) {
+            if (!preg_match(MUSIC_FILE_PATTERN, $validation['name'])) {
                 http_response_code(400);
                 echo json_encode(['success' => false, 'message' => 'Dateiname enthält unzulässige Zeichen']);
                 exit;
@@ -817,6 +870,10 @@ if ($action === 'upload_music') {
         echo json_encode(['success' => true]);
         exit;
     }
+
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Bitte mindestens eine Musikdatei auswählen.']);
+    exit;
 }
 
 if ($action === 'delete_music') {
@@ -847,7 +904,7 @@ if ($action === 'delete_music') {
         $teamId = $sessionTeamId;
     }
 
-    if (!in_array($target, ['allgemein', 'team'], true) || $fileName === '' || $fileName !== preg_replace('/[^A-Za-z0-9_\.\-]/', '', $fileName)) {
+    if (!in_array($target, ['allgemein', 'team'], true) || !preg_match(MUSIC_FILE_PATTERN, $fileName)) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Ungültiger Dateiname oder Zielordner']);
         exit;
@@ -953,7 +1010,10 @@ if ($action === 'upload_effect') {
     $existingFiles = glob($effectsDir . '/' . sprintf('%02d', $slot) . '_*');
     $oldFile = count($existingFiles) > 0 ? $existingFiles[0] : null;
 
-    $cleanName = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $customName);
+    $cleanName = substr(trim((string)preg_replace('/[^a-zA-Z0-9_\-]+/', '_', $customName), '_'), 0, 100);
+    if ($cleanName === '') {
+        $cleanName = 'Effekt';
+    }
 
     if (isset($_FILES['effect_file'])) {
         $validation = validateUploadedFile(

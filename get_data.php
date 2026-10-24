@@ -1,4 +1,12 @@
 <?php
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'domain' => '',
+    'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
@@ -92,10 +100,14 @@ if ($authenticated && is_dir($effectsDir)) {
     foreach ($files as $f) {
         if (preg_match('/\.(mp3|wav|ogg)$/i', $f)) {
             $filename = pathinfo($f, PATHINFO_FILENAME);
+            $slot = (int)substr($filename, 0, 2);
+            if ($slot < 1 || $slot > 6 || isset($effectFiles[$slot])) {
+                continue;
+            }
             $effectName = preg_replace('/\.(mp3|wav|ogg)$/i', '', preg_replace('/^\d{2}_/', '', $filename));
 
-            $effectFiles[] = [
-                'slot' => (int)substr($filename, 0, 2),
+            $effectFiles[$slot] = [
+                'slot' => $slot,
                 'name' => $effectName,
                 'path' => 'media.php?type=effect&team=' . rawurlencode($teamId) . '&file=' . rawurlencode($f)
             ];
@@ -135,7 +147,7 @@ echo json_encode([
     'role' => $userRole,
     'app_name' => $appName,
     'teams' => $teams,
-    'admin' => $adminConfig,
+    'admin' => $userRole === 'admin' ? $adminConfig : null,
     'current_team' => $teamId,
     'logged_in' => $loggedInTeamId !== '' || $userRole === 'admin',
     'authenticated_team' => $loggedInTeamId,
@@ -144,5 +156,5 @@ echo json_encode([
     'songs' => $authenticated ? $musicFiles : [],
     'general_music' => $authenticated ? $generalMusicFiles : [],
     'team_music' => $authenticated ? $teamMusicFiles : [],
-    'effects' => $authenticated ? array_slice($effectFiles, 0, 6) : []
+    'effects' => $authenticated ? array_values($effectFiles) : []
 ]);
