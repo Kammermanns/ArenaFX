@@ -189,6 +189,7 @@ def main():
     app.q('#save-teams').click()
     cls, txt = app.feedback('teams')
     check('Neues Team gespeichert', 'success' in cls and app.text('#stat-team-count') == '2', txt)
+    app.shot('03-teams')
 
     # 4) Musik
     app.tab('music')

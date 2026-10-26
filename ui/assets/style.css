@@ -946,6 +946,11 @@ button:disabled, .btn:disabled {
 
 .team-item {
     flex-wrap: wrap;
+    align-items: flex-start;
+}
+
+.team-item > .btn {
+    margin-top: 26px;
 }
 
 .team-field {

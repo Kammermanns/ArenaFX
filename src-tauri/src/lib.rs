@@ -1031,6 +1031,18 @@ struct UpdateInfo {
     notes: String,
 }
 
+/// Fragt GitHub nach einer neueren Version. Gibt es noch kein Release mit Update-Datei
+/// (z. B. vor der ersten Veröffentlichung), ist das kein Fehler, sondern "kein Update".
+async fn check_for_update(
+    updater: &tauri_plugin_updater::Updater,
+) -> AppResult<Option<tauri_plugin_updater::Update>> {
+    match updater.check().await {
+        Ok(update) => Ok(update),
+        Err(tauri_plugin_updater::Error::ReleaseNotFound) => Ok(None),
+        Err(error) => Err(err_detail("err_update_check", error)),
+    }
+}
+
 #[tauri::command]
 async fn check_update(app: AppHandle, state: State<'_, AppState>) -> AppResult<Option<UpdateInfo>> {
     state.require_admin()?;
@@ -1038,10 +1050,7 @@ async fn check_update(app: AppHandle, state: State<'_, AppState>) -> AppResult<O
     let updater = app
         .updater()
         .map_err(|e| err_detail("err_update_check", e))?;
-    let update = updater
-        .check()
-        .await
-        .map_err(|e| err_detail("err_update_check", e))?;
+    let update = check_for_update(&updater).await?;
     Ok(update.map(|update| UpdateInfo {
         current_version: update.current_version.clone(),
         version: update.version.clone(),
@@ -1056,10 +1065,8 @@ async fn install_update(app: AppHandle, state: State<'_, AppState>) -> AppResult
     let updater = app
         .updater()
         .map_err(|e| err_detail("err_update_check", e))?;
-    let update = updater
-        .check()
-        .await
-        .map_err(|e| err_detail("err_update_check", e))?
+    let update = check_for_update(&updater)
+        .await?
         .ok_or(err("err_no_update"))?;
     update
         .download_and_install(|_, _| {}, || {})
