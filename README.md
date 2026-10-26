@@ -84,7 +84,7 @@ Jeder Pull Request wird automatisch geprüft. Dabei entsteht auch ein Windows-In
 2. Auf GitHub unter **Actions → Version veröffentlichen → Run workflow** starten und optional eintragen, was neu ist.
 3. Der Workflow baut den Installer, signiert das Update und veröffentlicht das Release `v2.1.0`. Installierte Apps finden es danach unter **Einstellungen → Update**.
 
-Einmalig nötig: Unter **Settings → Secrets and variables → Actions** die Secrets `TAURI_SIGNING_PRIVATE_KEY` (Inhalt der privaten Schlüsseldatei) und `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` (leer lassen, falls ohne Passwort erstellt) anlegen. Der passende öffentliche Schlüssel steht in `tauri.conf.json`. Den privaten Schlüssel sicher aufbewahren: Geht er verloren, können installierte Apps keine Updates mehr annehmen.
+Einmalig nötig: Unter **Settings → Secrets and variables → Actions → New repository secret** das Secret `TAURI_SIGNING_PRIVATE_KEY` mit dem Inhalt der privaten Schlüsseldatei anlegen. Nur wenn der Schlüssel mit Passwort erstellt wurde, zusätzlich `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. Der passende öffentliche Schlüssel steht in `tauri.conf.json`. Den privaten Schlüssel sicher aufbewahren: Geht er verloren, können installierte Apps keine Updates mehr annehmen.
 
 ## Frühere Versionen
 
