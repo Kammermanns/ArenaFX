@@ -14,36 +14,25 @@ Soundbox für Eishockey-Spiele: Unterbruchsmusik und Effekt-Töne auf Knopfdruck
 - **Backup** als einzelne ZIP-Datei, **Übernahme** der Daten aus ArenaFX 1.x und der PHP-Soundbox.
 - **Updates** direkt aus der App (wenn Internet vorhanden ist).
 
-## Installation (Windows 10/11)
+## Anleitungen
 
-1. Unter [Releases](https://github.com/Kammermanns/ArenaFX/releases/latest) die Datei `ArenaFX_…_x64-setup.exe` herunterladen.
-2. Installieren. Es braucht keine Administratorrechte.
-   Windows zeigt eventuell „Der Computer wurde durch Windows geschützt“, weil die App nicht kostenpflichtig signiert ist: **Weitere Informationen → Trotzdem ausführen**.
-3. ArenaFX starten und die Einrichtung durchlaufen:
-   - **Neu einrichten:** Vereinsname, erstes Team und Admin-Zugang festlegen.
-   - **Aus alter Version übernehmen:** den Ordner der bisherigen ArenaFX-1.x- oder Soundbox-Installation wählen (der Ordner, in dem `media` liegt). Teams, Musik, Effekte, Logo und Tastenkürzel werden übernommen, die alten Dateien bleiben unverändert. Der Admin-Zugang wird neu festgelegt. Teams ohne Passwort werden gesperrt übernommen und brauchen danach ein Passwort.
+- **[Installation und Einrichtung](docs/Installation.md):** Setup, Ersteinrichtung, Übernahme alter Daten, Datenordner, Umzug, Updates
+- **[Bedienungsanleitung](docs/Anleitung.md):** Soundbox, Durchsage, Effekte, Tastenkürzel, Einstellungen, Checkliste für den Spieltag
+- **[Regiepult bauen](docs/Regiepult.md):** USB-Numpad zu einem Pult mit grossen Tasten umbauen
 
-Die App läuft komplett offline. WebView2 ist auf Windows 10/11 bereits vorhanden.
+## Schnellstart
 
-## Bedienung
+1. Unter [Releases](https://github.com/Kammermanns/ArenaFX/releases/latest) die Datei `ArenaFX_…_x64-setup.exe` herunterladen und installieren (Windows 10/11, keine Administratorrechte nötig).
+2. ArenaFX starten und bei der Einrichtung Verein, erstes Team und Admin-Zugang festlegen oder die Daten einer früheren Version übernehmen.
+3. Musik und Effekte hinzufügen, fertig.
 
-| Aktion | Maus | Taste (Standard) |
-|---|---|---|
-| Musik starten / stoppen | grosser Button | Num `+` |
-| Durchsage an / aus | „Durchsage“ | Num `0` |
-| Effekt 1–6 | Effekt-Buttons | Num `1`–`6` |
+| Aktion | Taste (Standard) |
+|---|---|
+| Musik starten / stoppen | Num `+` |
+| Durchsage an / aus | Num `0` |
+| Effekt 1–6 | Num `1`–`6` |
 
-Läuft ein Effekt, stoppt die Musik-Taste zuerst den Effekt. Die Tastenkürzel funktionieren, solange das ArenaFX-Fenster aktiv ist.
-
-Als Admin wählst du in der Soundbox oben das Team, dessen Musik und Effekte gespielt werden.
-
-## Daten, Backup und Updates
-
-- Alle Daten liegen in `%APPDATA%\ch.kammermann.arenafx` (in den Einstellungen unter **Backup & Daten → Datenordner öffnen**). Der Ordner bleibt bei Updates und beim Deinstallieren erhalten.
-- Passwörter werden nur als Hash (Argon2) gespeichert.
-- Die Konfiguration wird sicher geschrieben. Die vorherige Fassung bleibt als `config.json.bak` erhalten und wird automatisch verwendet, falls `config.json` beschädigt ist.
-- **Backup speichern** erzeugt eine ZIP-Datei mit allem. **Backup einspielen** ersetzt alle aktuellen Daten durch das Backup, nachdem es vollständig geprüft wurde.
-- **Update** (Einstellungen → Update) lädt neue Versionen von GitHub. Die Updates sind signiert, ArenaFX installiert nur Pakete mit gültiger Signatur.
+Alle Daten liegen in `%APPDATA%\ch.kammermann.arenafx` und bleiben bei Updates und beim Deinstallieren erhalten. Passwörter werden nur als Hash (Argon2) gespeichert.
 
 ## Entwicklung
 
@@ -85,8 +74,3 @@ Jeder Pull Request wird automatisch geprüft. Dabei entsteht auch ein Windows-In
 3. Der Workflow baut den Installer, signiert das Update und veröffentlicht das Release `v2.1.0`. Installierte Apps finden es danach unter **Einstellungen → Update**.
 
 Einmalig nötig: Unter **Settings → Secrets and variables → Actions → New repository secret** das Secret `TAURI_SIGNING_PRIVATE_KEY` mit dem Inhalt der privaten Schlüsseldatei anlegen. Nur wenn der Schlüssel mit Passwort erstellt wurde, zusätzlich `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. Der passende öffentliche Schlüssel steht in `tauri.conf.json`. Den privaten Schlüssel sicher aufbewahren: Geht er verloren, können installierte Apps keine Updates mehr annehmen.
-
-## Frühere Versionen
-
-- **v1.0.0:** Web-Version (PHP/XAMPP), siehe Release [v1.0.0](https://github.com/Kammermanns/ArenaFX/releases/tag/v1.0.0).
-- **1.x Desktop (Electron):** abgelöst durch diese Version. Die Daten lassen sich bei der Einrichtung übernehmen.
