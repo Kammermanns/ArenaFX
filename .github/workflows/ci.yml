@@ -82,7 +82,7 @@ jobs:
         run: cargo test --lib
 
       - name: Installer bauen (ohne Update-Signatur)
-        run: npx tauri build --ci --config "{\"bundle\":{\"createUpdaterArtifacts\":false}}"
+        run: npx tauri build --ci --config src-tauri/tauri.test-build.conf.json
 
       - name: Installer zum Testen bereitstellen
         uses: actions/upload-artifact@v4
