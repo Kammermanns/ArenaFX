@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArenaFX</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <script src="assets/i18n.js"></script>
+    <script src="assets/api.js"></script>
+    <script src="assets/soundbox.js" defer></script>
+</head>
+<body>
+
+<div class="app-shell">
+    <header class="soundboard-top panel">
+        <div class="soundboard-title">
+            <small data-i18n="active_team">Aktives Team</small>
+            <div id="display-team">–</div>
+            <select id="team-select" class="compact-select" data-i18n-aria="select_team" hidden></select>
+        </div>
+        <div class="soundboard-actions">
+            <a href="settings.html" class="btn btn-secondary" data-i18n="settings">Einstellungen</a>
+            <button type="button" class="btn btn-danger" id="logout" data-i18n="logout">Abmelden</button>
+        </div>
+    </header>
+
+    <div class="panel soundboard-control">
+        <div>
+            <div class="soundboard-status" id="display-status" aria-live="polite">…</div>
+            <small class="text-muted" id="music-source"></small>
+        </div>
+        <div class="logo-container">
+            <img id="main-logo" alt="" hidden>
+        </div>
+    </div>
+
+    <section class="panel soundboard-control">
+        <label class="mode-toggle" for="warmup-mode">
+            <input type="checkbox" id="warmup-mode">
+            <span data-i18n="warmup_mode">Warm-Up-Modus</span>
+        </label>
+
+        <button type="button" class="btn btn-warning btn-durchsage" id="btn-durchsage">
+            <span id="durchsage-text" data-i18n="durchsage">DURCHSAGE</span>
+            <kbd class="key-hint" id="durchsage-key"></kbd>
+        </button>
+
+        <div class="volume-row">
+            <label for="volume-slider" class="text-muted" data-i18n="volume">Lautstärke</label>
+            <input type="range" class="volume-slider" id="volume-slider" min="0" max="1" step="0.05" value="0.8">
+            <strong id="volume-label">80%</strong>
+        </div>
+    </section>
+
+    <main class="panel soundboard-main">
+        <div class="effects-grid" id="effects-grid"></div>
+        <button type="button" class="btn-main" id="btn-main">
+            <span id="main-text" data-i18n="music_start">MUSIK START</span>
+            <kbd class="key-hint" id="music-key"></kbd>
+        </button>
+    </main>
+</div>
+
+</body>
+</html>

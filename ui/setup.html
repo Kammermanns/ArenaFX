@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArenaFX – Einrichtung</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <script src="assets/i18n.js"></script>
+    <script src="assets/api.js"></script>
+    <script src="assets/setup.js" defer></script>
+</head>
+<body class="login-layout">
+
+<main class="login-card panel setup-card">
+    <div class="setup-top">
+        <p class="page-kicker" data-i18n="setup_kicker">Willkommen bei ArenaFX</p>
+        <select id="setup-language" class="compact-select" data-i18n-aria="language_setting">
+            <option value="de">Deutsch</option>
+            <option value="fr">Français</option>
+            <option value="en">English</option>
+        </select>
+    </div>
+    <h1 class="login-heading" data-i18n="setup_title">Einrichtung</h1>
+
+    <div class="choice-row" role="tablist">
+        <button type="button" class="choice active" id="mode-new" role="tab" aria-selected="true" data-i18n="setup_mode_new">Neu einrichten</button>
+        <button type="button" class="choice" id="mode-legacy" role="tab" aria-selected="false" data-i18n="setup_mode_legacy">Aus alter Version übernehmen</button>
+    </div>
+
+    <form id="setup-form" class="stack-form" autocomplete="off">
+        <div id="new-fields" class="stack-form">
+            <label for="app-name" data-i18n="club_name">Vereinsname</label>
+            <input type="text" id="app-name" maxlength="80" required data-i18n-placeholder="club_name_placeholder">
+
+            <label for="team-name" data-i18n="first_team_name">Name des ersten Teams</label>
+            <input type="text" id="team-name" maxlength="60" required data-i18n-placeholder="team_name_placeholder">
+
+            <label for="team-password" data-i18n="first_team_password">Passwort für dieses Team</label>
+            <input type="password" id="team-password" autocomplete="new-password" required>
+            <small class="text-muted" data-i18n="team_password_rule">Mindestens 4 Zeichen.</small>
+        </div>
+
+        <div id="legacy-fields" class="stack-form" hidden>
+            <p class="text-muted" data-i18n="legacy_intro">Wähle den Ordner der bisherigen ArenaFX- oder Soundbox-Installation (der Ordner mit „media“ darin) oder einen Backup-Ordner der alten Version. Musik, Effekte, Teams, Logo und Tastenkürzel werden übernommen, die alten Dateien bleiben unverändert.</p>
+            <button type="button" class="btn btn-secondary" id="pick-legacy" data-i18n="legacy_pick">Ordner auswählen …</button>
+            <div id="legacy-preview" class="preview-box" hidden></div>
+        </div>
+
+        <h2 class="form-section-title" data-i18n="admin_access">Admin-Zugang</h2>
+        <label for="admin-username" data-i18n="username">Benutzername</label>
+        <input type="text" id="admin-username" maxlength="50" autocomplete="username" required>
+
+        <label for="admin-password" data-i18n="password">Passwort</label>
+        <input type="password" id="admin-password" autocomplete="new-password" required>
+        <label for="admin-password-repeat" data-i18n="password_repeat">Passwort wiederholen</label>
+        <input type="password" id="admin-password-repeat" autocomplete="new-password" required>
+        <small class="text-muted" data-i18n="admin_password_rule">Mindestens 8 Zeichen. Gut merken – ohne dieses Passwort kommst du nicht mehr in die Einstellungen.</small>
+
+        <button type="submit" class="btn btn-block" id="setup-button" data-i18n="setup_finish">Einrichtung abschliessen</button>
+    </form>
+    <p class="form-message error-text" id="setup-message" role="alert" hidden></p>
+</main>
+
+</body>
+</html>

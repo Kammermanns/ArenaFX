@@ -1,0 +1,9 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Die Oberfläche darf nur die eigenen ArenaFX-Befehle aufrufen. Dateizugriff, Dialoge und Updates laufen ausschliesslich im Rust-Teil.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default"
+  ]
+}
