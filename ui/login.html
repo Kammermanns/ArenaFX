@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArenaFX</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <script src="assets/i18n.js"></script>
+    <script src="assets/api.js"></script>
+    <script src="assets/login.js" defer></script>
+</head>
+<body class="login-layout">
+
+<main class="login-card panel" id="login-view" hidden>
+    <div class="logo-container">
+        <img id="login-logo" alt="" hidden>
+    </div>
+    <p class="page-kicker" id="login-app-name">ArenaFX</p>
+    <h1 class="login-heading" data-i18n="login_title">Anmeldung</h1>
+
+    <form id="login-form" class="stack-form" autocomplete="off">
+        <label for="account" data-i18n="login_account">Anmelden als</label>
+        <select id="account" required></select>
+
+        <div id="admin-username-box" class="stack-form" hidden>
+            <label for="admin-username" data-i18n="username">Benutzername</label>
+            <input type="text" id="admin-username" autocomplete="username" maxlength="50">
+        </div>
+
+        <label for="password" data-i18n="login_password">Passwort</label>
+        <input type="password" id="password" autocomplete="current-password" required>
+
+        <button type="submit" class="btn btn-block" id="login-button" data-i18n="login_button">Anmelden</button>
+    </form>
+    <p class="form-message error-text" id="login-message" role="alert" hidden></p>
+</main>
+
+<main class="login-card panel" id="broken-view" hidden>
+    <div class="login-logo-fallback" aria-hidden="true">!</div>
+    <h1 class="login-heading" data-i18n="broken_title">Daten nicht lesbar</h1>
+    <p data-i18n="broken_text">Die Konfiguration von ArenaFX ist beschädigt und es gibt keine lesbare Sicherung. Deine Musik ist davon nicht betroffen.</p>
+    <p class="text-muted" data-i18n="broken_hint">Lösung: Im Datenordner die Datei config.json durch eine Sicherung ersetzen oder löschen. Nach dem Löschen startet ArenaFX mit der Einrichtung, dort kannst du ein Backup einspielen.</p>
+    <code class="path-box" id="broken-path"></code>
+    <button type="button" class="btn btn-block" id="open-folder" data-i18n="open_data_folder">Datenordner öffnen</button>
+    <p class="form-message error-text" id="broken-message" role="alert" hidden></p>
+</main>
+
+</body>
+</html>

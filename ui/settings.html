@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArenaFX – Einstellungen</title>
+    <link rel="stylesheet" href="assets/style.css">
+    <script src="assets/i18n.js"></script>
+    <script src="assets/api.js"></script>
+    <script src="assets/settings.js" defer></script>
+</head>
+<body>
+<div class="app-shell settings-page">
+    <header class="settings-header panel">
+        <div>
+            <p class="page-kicker" id="header-kicker"></p>
+            <h1 class="page-title" id="header-title" data-i18n="settings">Einstellungen</h1>
+        </div>
+        <div class="settings-header-actions">
+            <button type="button" class="btn btn-secondary" data-open="help-modal" data-i18n="help">Hilfe</button>
+            <button type="button" class="btn btn-secondary" data-open="about-modal" data-i18n="about">Über</button>
+            <a href="index.html" class="btn btn-secondary" data-i18n="back_to_soundbox">Zur Soundbox</a>
+            <button type="button" class="btn btn-danger" id="logout" data-i18n="logout">Abmelden</button>
+        </div>
+    </header>
+
+    <div class="banner" id="banner" role="status" hidden></div>
+
+    <!-- ADMIN -->
+    <div id="admin-view" hidden>
+        <section class="admin-overview">
+            <div class="admin-stats">
+                <article class="admin-stat-card"><div><span data-i18n="club">Verein</span><strong id="stat-club-name"></strong></div></article>
+                <article class="admin-stat-card"><div><span data-i18n="teams">Teams</span><strong id="stat-team-count"></strong></div></article>
+                <article class="admin-stat-card"><div><span data-i18n="music_files">Musikdateien</span><strong id="stat-music-count"></strong></div></article>
+            </div>
+        </section>
+
+        <nav class="admin-nav" role="tablist">
+            <button type="button" role="tab" class="admin-nav-item" data-tab="general" data-i18n="tab_general">Allgemein</button>
+            <button type="button" role="tab" class="admin-nav-item" data-tab="teams" data-i18n="tab_teams">Teams</button>
+            <button type="button" role="tab" class="admin-nav-item" data-tab="music" data-i18n="tab_music">Musik</button>
+            <button type="button" role="tab" class="admin-nav-item" data-tab="effects" data-i18n="tab_effects">Effekte</button>
+            <button type="button" role="tab" class="admin-nav-item" data-tab="hotkeys" data-i18n="tab_hotkeys">Tastenkürzel</button>
+            <button type="button" role="tab" class="admin-nav-item" data-tab="data" data-i18n="tab_data">Backup &amp; Daten</button>
+            <button type="button" role="tab" class="admin-nav-item" data-tab="update"><span data-i18n="tab_update">Update</span><span class="update-badge" id="update-badge" hidden data-i18n="new_badge">Neu</span></button>
+        </nav>
+
+        <section class="admin-section" data-section="general" hidden>
+            <div class="settings-grid">
+                <form class="card stack-form" id="form-app-name">
+                    <h2 data-i18n="app_title_setting">Name der Soundbox</h2>
+                    <label for="app-name" data-i18n="club_name">Vereinsname</label>
+                    <input type="text" id="app-name" maxlength="80" required>
+                    <button type="submit" class="btn" data-i18n="save">Speichern</button>
+                </form>
+
+                <form class="card stack-form" id="form-language">
+                    <h2 data-i18n="language_setting">Sprache</h2>
+                    <label for="app-language" data-i18n="select_language">Sprache der Anwendung</label>
+                    <select id="app-language">
+                        <option value="de">Deutsch</option>
+                        <option value="fr">Français</option>
+                        <option value="en">English</option>
+                    </select>
+                    <button type="submit" class="btn" data-i18n="save">Speichern</button>
+                </form>
+
+                <form class="card stack-form" id="form-admin" autocomplete="off">
+                    <h2 data-i18n="admin_access">Admin-Zugang</h2>
+                    <label for="admin-current" data-i18n="current_password">Aktuelles Passwort</label>
+                    <input type="password" id="admin-current" autocomplete="current-password" required>
+                    <label for="admin-username" data-i18n="username">Benutzername</label>
+                    <input type="text" id="admin-username" maxlength="50" autocomplete="username" required>
+                    <label for="admin-new" data-i18n="new_password">Neues Passwort</label>
+                    <input type="password" id="admin-new" autocomplete="new-password" data-i18n-placeholder="new_password_placeholder">
+                    <button type="submit" class="btn" data-i18n="save">Speichern</button>
+                </form>
+
+                <div class="card stack-form">
+                    <h2 data-i18n="club_logo">Vereinslogo</h2>
+                    <div class="logo-preview"><img id="logo-preview" alt="" hidden><span class="text-muted" id="logo-empty" data-i18n="no_logo">Kein Logo</span></div>
+                    <div class="button-row">
+                        <button type="button" class="btn" id="pick-logo" data-i18n="select_logo_file">Logo wählen …</button>
+                        <button type="button" class="btn btn-secondary" id="remove-logo" data-i18n="remove">Entfernen</button>
+                    </div>
+                </div>
+            </div>
+            <div class="admin-feedback" data-feedback="general" hidden></div>
+        </section>
+
+        <section class="admin-section" data-section="teams" hidden>
+            <div class="card">
+                <h2 data-i18n="teams">Teams</h2>
+                <p class="text-muted" data-i18n="teams_hint">Jedes Team meldet sich mit seinem eigenen Passwort an und hat eigene Musik und Effekte. Leeres Passwortfeld = Passwort bleibt unverändert.</p>
+                <div id="teams-list" class="teams-list"></div>
+                <div class="button-row">
+                    <button type="button" class="btn btn-secondary" id="add-team" data-i18n="add_team">Team hinzufügen</button>
+                    <button type="button" class="btn" id="save-teams" data-i18n="save">Speichern</button>
+                </div>
+            </div>
+            <div class="admin-feedback" data-feedback="teams" hidden></div>
+        </section>
+
+        <section class="admin-section" data-section="music" hidden>
+            <div class="card stack-form">
+                <h2 data-i18n="music_lib">Musikbibliothek</h2>
+                <label for="music-target" data-i18n="target_folder">Ordner</label>
+                <select id="music-target"></select>
+                <p class="text-muted" data-i18n="music_hint">Teams mit eigener Musik spielen nur diese. Teams ohne eigene Musik spielen die allgemeine Musik.</p>
+                <div class="button-row">
+                    <button type="button" class="btn" id="add-music" data-i18n="upload_music">Musik hinzufügen …</button>
+                </div>
+                <div id="music-list" class="file-list"></div>
+            </div>
+            <div class="admin-feedback" data-feedback="music" hidden></div>
+        </section>
+
+        <section class="admin-section" data-section="effects" hidden>
+            <div class="card stack-form">
+                <h2 data-i18n="effect_buttons">Effekt-Buttons</h2>
+                <label for="effect-team" data-i18n="select_team">Team</label>
+                <select id="effect-team"></select>
+                <div class="effects-builder" id="effects-builder"></div>
+            </div>
+            <div class="admin-feedback" data-feedback="effects" hidden></div>
+        </section>
+
+        <section class="admin-section" data-section="hotkeys" hidden>
+            <form class="card" id="form-hotkeys">
+                <h2 data-i18n="hotkeys_title">Tastenkürzel</h2>
+                <p class="text-muted" data-i18n="hotkeys_hint">In ein Feld klicken und die gewünschte Taste drücken. Entf oder Rücktaste löscht die Belegung.</p>
+                <div class="hotkey-grid" id="hotkey-grid"></div>
+                <div class="button-row">
+                    <button type="submit" class="btn" data-i18n="save">Speichern</button>
+                    <button type="button" class="btn btn-secondary" id="reset-hotkeys" data-i18n="reset_defaults">Standard wiederherstellen</button>
+                </div>
+            </form>
+            <div class="admin-feedback" data-feedback="hotkeys" hidden></div>
+        </section>
+
+        <section class="admin-section" data-section="data" hidden>
+            <div class="settings-grid">
+                <div class="card stack-form">
+                    <h2 data-i18n="backups">Backup</h2>
+                    <p data-i18n="backup_desc">Speichert Einstellungen, Teams, Musik, Effekte und Logo in einer einzigen ZIP-Datei – zum Beispiel auf einem USB-Stick.</p>
+                    <button type="button" class="btn" id="export-backup" data-i18n="export_backup">Backup speichern …</button>
+                    <p data-i18n="import_desc">Beim Einspielen werden alle aktuellen Daten durch das Backup ersetzt. Danach meldest du dich mit den Zugangsdaten aus dem Backup an.</p>
+                    <button type="button" class="btn btn-danger" id="import-backup" data-i18n="import_backup">Backup einspielen …</button>
+                </div>
+                <div class="card stack-form">
+                    <h2 data-i18n="legacy_title">Alte Version übernehmen</h2>
+                    <p data-i18n="legacy_settings_desc">Übernimmt Teams, Musik, Effekte, Logo und Tastenkürzel aus ArenaFX 1.x oder der PHP-Soundbox. Die aktuellen Daten werden ersetzt, dein Admin-Zugang bleibt.</p>
+                    <button type="button" class="btn btn-secondary" id="pick-legacy" data-i18n="legacy_pick">Ordner auswählen …</button>
+                    <div id="legacy-preview" class="preview-box" hidden></div>
+                    <button type="button" class="btn btn-danger" id="run-legacy" data-i18n="legacy_run" hidden>Daten übernehmen</button>
+                </div>
+                <div class="card stack-form">
+                    <h2 data-i18n="data_folder">Datenordner</h2>
+                    <p data-i18n="data_folder_desc">Hier liegen Konfiguration und Mediendateien. Er bleibt bei Updates und beim Deinstallieren erhalten.</p>
+                    <code class="path-box" id="data-dir"></code>
+                    <button type="button" class="btn btn-secondary" id="open-data-folder" data-i18n="open_data_folder">Datenordner öffnen</button>
+                </div>
+            </div>
+            <div class="admin-feedback" data-feedback="data" hidden></div>
+        </section>
+
+        <section class="admin-section" data-section="update" hidden>
+            <div class="card stack-form">
+                <h2 data-i18n="update_title">Programm-Update</h2>
+                <dl class="version-list">
+                    <div><dt data-i18n="installed_version">Installiert</dt><dd id="version-current"></dd></div>
+                    <div><dt data-i18n="latest_version">Neueste</dt><dd id="version-latest">–</dd></div>
+                </dl>
+                <p class="text-muted" id="update-summary" data-i18n="update_not_checked">Noch nicht geprüft.</p>
+                <div id="update-details" hidden>
+                    <div class="notes-box" id="update-notes"></div>
+                    <p class="text-muted" data-i18n="update_hint">Musik, Einstellungen und Teams bleiben beim Update erhalten. ArenaFX startet danach automatisch neu. Nicht während eines Spiels aktualisieren.</p>
+                </div>
+                <div class="button-row">
+                    <button type="button" class="btn btn-secondary" id="check-update" data-i18n="update_check">Nach Updates suchen</button>
+                    <button type="button" class="btn" id="install-update" data-i18n="update_install" hidden>Jetzt aktualisieren</button>
+                </div>
+                <p class="text-muted" data-i18n="update_offline">Für die Suche braucht ArenaFX eine Internetverbindung. Ohne Internet funktioniert die Soundbox normal weiter.</p>
+            </div>
+            <div class="admin-feedback" data-feedback="update" hidden></div>
+        </section>
+    </div>
+
+    <!-- TEAM -->
+    <div id="team-view" hidden>
+        <div class="card stack-form">
+            <h2 data-i18n="team_music_title">Musik</h2>
+            <p class="text-muted" data-i18n="team_music_hint">Diese Musik wird nur für dein Team gespielt. Ohne eigene Musik läuft die allgemeine Musik.</p>
+            <div class="button-row">
+                <button type="button" class="btn" id="team-add-music" data-i18n="upload_music">Musik hinzufügen …</button>
+            </div>
+            <div id="team-music-list" class="file-list"></div>
+        </div>
+        <div class="card stack-form">
+            <h2 data-i18n="effect_buttons">Effekt-Buttons</h2>
+            <div class="effects-builder" id="team-effects-builder"></div>
+        </div>
+        <div class="admin-feedback" data-feedback="team" hidden></div>
+    </div>
+
+    <dialog id="help-modal" class="app-modal">
+        <div class="modal-header">
+            <h2 data-i18n="help">Hilfe</h2>
+            <button type="button" class="modal-close-icon" data-close aria-label="×">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p data-i18n="help_1">Musik-Taste: startet einen zufälligen Song an einer zufälligen Stelle und stoppt mit sanftem Ausblenden. Im Warm-Up-Modus laufen ganze Songs nacheinander.</p>
+            <p data-i18n="help_2">Durchsage: senkt die Musik auf 20 %, damit der Speaker verstanden wird. Nochmals drücken hebt sie wieder an.</p>
+            <p data-i18n="help_3">Effekte: unterbrechen die Musik sofort und starten ohne Verzögerung.</p>
+            <p data-i18n="help_4">Tastenkürzel funktionieren, solange das ArenaFX-Fenster aktiv ist.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn" data-close data-i18n="close">Schliessen</button>
+        </div>
+    </dialog>
+
+    <dialog id="about-modal" class="app-modal">
+        <div class="modal-header">
+            <h2 data-i18n="about">Über</h2>
+            <button type="button" class="modal-close-icon" data-close aria-label="×">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p><strong>ArenaFX</strong> <span id="about-version"></span></p>
+            <p>© 2026 Stefan Kammermann</p>
+            <p class="text-muted">github.com/Kammermanns/ArenaFX</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn" data-close data-i18n="close">Schliessen</button>
+        </div>
+    </dialog>
+</div>
+</body>
+</html>

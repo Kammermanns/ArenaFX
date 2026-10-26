@@ -1,7 +1,8 @@
-# Laufzeitdaten der Soundbox (Konfiguration mit Passwort-Hashes, Logo, Musik, Effekte)
-/media/*
-!/media/.htaccess
-/media/config.json.tmp
+# Abhängigkeiten und Build-Ergebnisse
+node_modules/
+src-tauri/target/
+src-tauri/gen/
 
-# Lokale Backups
-*.tar.gz
+# Signaturschlüssel für Updates gehören nie ins Repository
+*.key
+*.key.pub
